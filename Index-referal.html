@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>CoinTaskerBot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:inwght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #F5F5F5; --card-color: #FFFFFF; --primary-color: #1976D2; --accent-color: #FFD700;
+            --text-primary: #1A1A1A; --text-secondary: #6c757d; --border-color: #e0e0e0;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-primary); font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; height: 100vh; max-width: 450px; background: var(--bg-color); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        main { flex-grow: 1; overflow-y: auto; padding: 20px; padding-bottom: 90px; }
+        .view { display: none; animation: fadeIn 0.4s ease-out; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+        .header .greeting .title { font-size: 1.5rem; font-weight: 600; margin: 0; }
+        .header .greeting .subtitle { font-size: 0.9rem; color: var(--text-secondary); margin: 0; }
+        .profile-pic { width: 45px; height: 45px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; border: 2px solid var(--accent-color); }
+        .profile-pic img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+        .balance-card { background: var(--card-color); border-radius: 20px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+        .balance-card .label { font-size: 1rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .balance-card .balance-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); margin: 0; }
+        .balance-card .balance-usd { font-size: 1rem; font-weight: 500; color: var(--text-secondary); margin-top: 5px; }
+        .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+        .btn { padding: 0.8rem; border-radius: 12px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-secondary { background: var(--accent-color); color: var(--text-primary); }
+
+        .section-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+        
+        .task-card, .deposit-info-card { background: var(--card-color); border-radius: 15px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; transition: all 0.2s ease; box-shadow: var(--shadow); border: 1px solid transparent; }
+        .task-card:not(.disabled):hover { transform: translateY(-3px); border-color: var(--primary-color); }
+        .task-card.disabled { opacity: 0.6; cursor: not-allowed; background: #f0f0f0; }
+        .task-icon { font-size: 1.5rem; color: var(--primary-color); margin-right: 1.25rem; width: 30px; }
+        .task-details h3, .deposit-info-card h3 { margin: 0; font-size: 1rem; font-weight: 500; }
+        .task-details p, .deposit-info-card p { margin: 2px 0 0; font-size: 0.8rem; color: var(--text-secondary); }
+        .task-reward { margin-left: auto; font-size: 1rem; font-weight: 600; color: var(--accent-color); }
+
+        .package-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        .current-plan-card { background: var(--card-color); border-radius: 15px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow); border: 2px solid var(--accent-color); margin-bottom: 1.5rem;}
+        .package-card { background: var(--card-color); border-radius: 15px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow); border: 2px solid var(--border-color); }
+        .package-card h3 { margin-top: 0; font-size: 1.5rem; color: var(--primary-color); font-weight: 600; }
+        .package-card .price, .current-plan-card .price { font-size: 2rem; font-weight: 700; margin: 0.5rem 0; }
+        .package-card .price small, .current-plan-card .price small { font-size: 1rem; font-weight: 400; color: var(--text-secondary); }
+        .package-card ul, .current-plan-card ul { list-style: none; padding: 0; margin: 1.5rem 0; text-align: left; }
+        .package-card ul li, .current-plan-card ul li { margin-bottom: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; }
+        .package-card ul li i, .current-plan-card ul li i { color: var(--primary-color); margin-right: 10px; }
+        .btn-buy { width: 100%; padding: 0.8rem; border-radius: 10px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: var(--primary-color); color: white; margin-top: 1rem; }
+        .btn-buy:disabled { background: var(--text-secondary); cursor: not-allowed; }
+
+        .invite-card { background: linear-gradient(135deg, var(--primary-color), #4e9eff); color: white; border-radius: 20px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow); }
+        .invite-card .ref-link-wrapper { background: rgba(255, 255, 255, 0.2); padding: 0.8rem; border-radius: 10px; margin: 1.5rem 0; word-break: break-all; min-height: 50px; }
+        .invite-card p { opacity: 0.9; }
+        #copy-ref-link { background: var(--accent-color); color: var(--text-primary); }
+
+        .footer-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; max-width: 450px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card-color); padding: 10px 0; border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .nav-button { display: flex; flex-direction: column; align-items: center; color: var(--text-secondary); background: none; border: none; font-size: 0.75rem; transition: all 0.2s ease; cursor: pointer; padding: 5px; }
+        .nav-button .icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .nav-button.active { color: var(--primary-color); }
+
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px 0; }
+        .modal-content { background: var(--card-color); padding: 1.5rem; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: var(--shadow); max-height: 95vh; overflow-y: auto;}
+        .input-group { text-align: left; margin-bottom: 1rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;}
+        .input-field { width: 100%; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.8rem 1rem; border-radius: 10px; font-size: 1rem; }
+        .modal-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .copy-btn { margin-left: auto; background: none; border: none; color: var(--primary-color); cursor: pointer; font-size: 1.2rem; }
+        .verify-btn { background: var(--primary-color); color: white; padding: 6px 12px; border:none; border-radius: 8px; font-weight: 500; cursor: pointer;}
+        .verify-btn:disabled { background: var(--text-secondary); cursor: wait;}
+    </style>
+    
+    <script src='//libtl.com/sdk.js' data-zone='9819312' data-sdk='show_9819312'></script>
+    
+</head>
+<body>
+    <div class="container">
+        <main id="main-content">
+            <!-- Views will be rendered here -->
+        </main>
+        
+        <footer class="footer-nav" style="display: none;">
+            <button class="nav-button active" onclick="showView('home-view')"><i class="icon fa-solid fa-house"></i>Home</button>
+            <button class="nav-button" onclick="showView('tasks-view')"><i class="icon fa-solid fa-list-check"></i>Tasks</button>
+            <button class="nav-button" onclick="showView('package-view')"><i class="icon fa-solid fa-rocket"></i>Package</button>
+            <button class="nav-button" onclick="showView('invite-view')"><i class="icon fa-solid fa-user-plus"></i>Invite</button>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div id="deposit-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h2 class="section-title" id="deposit-modal-title">Activate Plan</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Send the exact package amount (USDT BEP20) to the address below, then fill out the form.</p>
+            <div class="deposit-info-card"><div class="task-details"><h3>Wallet Address (USDT BEP20)</h3><p id="wallet-address">0x22b55ccc532d4ad62895975e6fe4542a6699bcc9</p></div><button class="copy-btn" onclick="copyToClipboard('wallet-address')"><i class="fa-regular fa-copy"></i></button></div>
+            <div class="deposit-info-card"><div class="task-details"><h3>Binance ID</h3><p id="binance-id">519202493</p></div><button class="copy-btn" onclick="copyToClipboard('binance-id')"><i class="fa-regular fa-copy"></i></button></div>
+            <h3 style="margin-top: 2rem; font-size: 1.1rem;">Submit Payment Details</h3>
+            <div class="input-group"><label for="deposit-txid">TXID (Transaction Hash)</label><input type="text" id="deposit-txid" class="input-field" placeholder="Enter transaction hash"></div>
+            <div class="input-group"><label for="deposit-amount">Amount Sent (USDT)</label><input type="number" id="deposit-amount" class="input-field" placeholder="e.g., 5"></div>
+            <div class="modal-actions"><button class="btn" style="background: #e0e0e0; flex:1;" onclick="hideDepositModal()">Cancel</button><button class="btn btn-primary" style="flex:2;" onclick="submitDepositRequest()">Submit</button></div>
+        </div>
+    </div>
+    <div id="withdrawal-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h2 class="section-title">Request Withdrawal</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Minimum: 10,000 CT ($10). Requires an active package.</p>
+            <div class="input-group"><label for="withdrawal-amount">Amount (CT)</label><input type="number" id="withdrawal-amount" class="input-field" placeholder="e.g., 15000"></div>
+            <div class="input-group"><label for="withdrawal-method">Withdrawal Method</label><select id="withdrawal-method" class="input-field" onchange="toggleWithdrawalInput()"><option value="usdt">USDT (BEP20)</option><option value="binance">Binance ID</option></select></div>
+            <div class="input-group" id="usdt-input-group"><label for="withdrawal-address">USDT (BEP20) Address</label><input type="text" id="withdrawal-address" class="input-field" placeholder="0x..."></div>
+            <div class="input-group" id="binance-input-group" style="display: none;"><label for="withdrawal-binance-id">Binance ID</label><input type="text" id="withdrawal-binance-id" class="input-field" placeholder="Enter your Binance ID"></div>
+            <div class="modal-actions"><button class="btn" style="background: #e0e0e0; flex:1;" onclick="hideWithdrawalModal()">Cancel</button><button class="btn btn-primary" style="flex:2;" onclick="requestWithdrawal()">Request</button></div>
+        </div>
+    </div>
+    
+    <script src='https://telegram.org/js/telegram-web-app.js'></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyDIKjauCf0k3G6FT2ROtHirCcs2mNIeWuQ", authDomain: "cointasker-2.firebaseapp.com", databaseURL: "https://cointasker-2.firebaseio.com", projectId: "cointasker-2", storageBucket: "cointasker-2.appspot.com", messagingSenderId: "802713658402", appId: "1:802713658402:web:8d07e946ecd8819faa167b" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let tgUser = null, userData = {}, userRef = null, appPackages = {};
+        let currentPackageToBuy = null;
+        const BOT_USERNAME = "CoinTaskersBot";
+        const REPLIT_BOT_URL = "https://928740e5-69d4-424c-a075-3ffe15f62ea8-00-3v2dxgwkf57wq.pke.replit.dev/";
+        const CT_PER_USD = 1000;
+        const REWARDS = { ad: 50, referral: 50 };
+        const MIN_WITHDRAWAL_CT = 10000;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                Telegram.WebApp.ready(); Telegram.WebApp.expand(); Telegram.WebApp.setHeaderColor('#1976D2');
+                tgUser = Telegram.WebApp.initDataUnsafe.user;
+            } else {
+                console.warn("Running in browser. Faking user data.");
+                tgUser = { id: 123456, first_name: 'Browser', last_name: 'User', username: 'browseruser', photo_url: '' };
+            }
+            
+            if (tgUser && tgUser.id) {
+                await fetchAppPackages();
+                userRef = db.collection('users').doc(String(tgUser.id));
+                await checkUserExists();
+            } else { customAlert("Error: Could not get user data.", 'error'); }
+        });
+
+        async function fetchAppPackages() {
+            try {
+                const snapshot = await db.collection('packages').get();
+                appPackages = {};
+                snapshot.forEach(doc => { appPackages[doc.id] = doc.data(); });
+                appPackages['free'] = { name: "Free", adLimit: 10, durationDays: 9999, price: 0, isActive: true };
+            } catch (error) { console.error("Could not fetch packages:", error); }
+        }
+
+        async function checkUserExists() {
+            const doc = await userRef.get();
+            if (doc.exists) {
+                attachUserListener();
+            } else {
+                if (!window.Telegram || !window.Telegram.WebApp.initData) { showView('signup-view'); } 
+                else { showView('signup-view'); }
+            }
+        }
+
+        function attachUserListener() {
+            userRef.onSnapshot(doc => {
+                if (doc.exists) {
+                    userData = doc.data();
+                    if (userData.isBlocked) {
+                        document.body.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #ef4444;"><i class="fas fa-ban" style="font-size: 4rem;"></i><h1 style="font-size: 1.5rem; margin-top: 1.5rem;">Account Blocked</h1><p style="color: #6c757d;">Your account has been blocked. Please contact support.</p></div>`;
+                        return;
+                    }
+
+                    const today = new Date().toISOString().split('T')[0];
+                    if (userData.lastAdWatchDate !== today) { userRef.update({ dailyAdCount: 0, lastAdWatchDate: today }); }
+                    if (userData.packageExpiry && new Date() > userData.packageExpiry.toDate()) {
+                        userRef.update({ activePackage: 'free', packageExpiry: null });
+                        customAlert("Your premium package has expired.");
+                    }
+                }
+                updateUI();
+                if(!document.querySelector('.view.active')) { showView('home-view'); }
+                document.querySelector('.footer-nav').style.display = 'grid';
+            }, error => {
+                console.error("Firestore error:", error);
+                document.body.innerHTML = `<div style="padding: 20px; text-align: center;"><h1>Connection Error</h1><p>Please check your connection and restart the app.</p></div>`;
+            });
+        }
+
+        function updateUI() {
+            if (!userData) return;
+            const name = userData.firstName || tgUser.first_name || 'User';
+            const greetingTitle = document.getElementById('greeting-title');
+            if (greetingTitle) greetingTitle.textContent = `Hello, ${name}!`;
+            
+            const balanceValue = document.getElementById('balance-value');
+            if(balanceValue) balanceValue.textContent = Math.floor(userData.balance || 0);
+            
+            const balanceUsd = document.getElementById('balance-usd-value');
+            if(balanceUsd) balanceUsd.textContent = ((userData.balance || 0) / CT_PER_USD).toFixed(2);
+            
+            const referralCount = document.getElementById('referral-count');
+    if (referralCount) {
+        referralCount.textContent = `${userData.referralCount || 0} Users`;
+    }
+            
+            const profilePicDiv = document.getElementById('profile-pic');
+            if(profilePicDiv) {
+                if (tgUser.photo_url) { profilePicDiv.innerHTML = `<img src="${tgUser.photo_url}" alt="P">`; } 
+                else { profilePicDiv.textContent = name.charAt(0).toUpperCase(); }
+            }
+
+            const currentPackageKey = userData.activePackage || 'free';
+            const currentPackage = appPackages[currentPackageKey] || appPackages['free'];
+            const adLimit = currentPackage.adLimit;
+            const adsLeft = adLimit - (userData.dailyAdCount || 0);
+            
+            const adLimitText = document.getElementById('ad-limit-text');
+            if(adLimitText) adLimitText.textContent = `Ads Left: ${adsLeft}`;
+            
+            const adTaskCard = document.querySelector('.task-card[onclick="handleAdTask()"]');
+            if(adTaskCard) {
+                if (adsLeft <= 0) { adTaskCard.classList.add('disabled'); } 
+                else { adTaskCard.classList.remove('disabled'); }
+            }
+            
+            const userPackageName = document.getElementById('user-package-name');
+            if(userPackageName) userPackageName.textContent = currentPackage.name;
+
+            const userPackageExpiry = document.getElementById('user-package-expiry');
+            if(userPackageExpiry) {
+                if (userData.packageExpiry) {
+                    userPackageExpiry.textContent = `Expires on: ${userData.packageExpiry.toDate().toLocaleDateString()}`;
+                } else { userPackageExpiry.textContent = 'No Expiry'; }
+            }
+            
+            const refLink = document.getElementById('ref-link');
+            if(refLink) refLink.textContent = `https://t.me/${BOT_USERNAME}?start=${tgUser.id}`;
+        }
+        
+        async function completeSignup() {
+            if (!window.Telegram || !window.Telegram.WebApp.initData) return customAlert("Please open in Telegram to sign up.", "error");
+            const button = document.querySelector('#signup-view button');
+            button.disabled = true; button.textContent = 'Setting up...';
+            
+            try {
+                // --- REFERRAL LOGIC STARTS HERE ---
+                const startParam = Telegram.WebApp.initDataUnsafe.start_param;
+                const referredBy = startParam && !isNaN(startParam) ? startParam : null;
+
+                const name = `${tgUser.first_name || 'New'} ${tgUser.last_name || 'User'}`.trim();
+                const initialUserData = {
+                    userId: tgUser.id, firstName: name, username: tgUser.username || "N/A",
+                    balance: 0, dailyAdCount: 0, lastAdWatchDate: new Date().toISOString().split('T')[0],
+                    claimedChannels: [], activePackage: 'free', packageExpiry: null, isBlocked: false,
+                    referredBy: referredBy, referralCount: 0, // Add referral fields
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                await userRef.set(initialUserData);
+
+                if (referredBy) {
+                    const referrerRef = db.collection('users').doc(referredBy);
+                    // Use a transaction to safely update the referrer's data
+                    await db.runTransaction(async (transaction) => {
+                        const referrerDoc = await transaction.get(referrerRef);
+                        if (referrerDoc.exists) {
+                            transaction.update(referrerRef, {
+                                balance: firebase.firestore.FieldValue.increment(REWARDS.referral),
+                                referralCount: firebase.firestore.FieldValue.increment(1)
+                            });
+                        }
+                    });
+                }
+                // --- REFERRAL LOGIC ENDS HERE ---
+
+                attachUserListener();
+            } catch (error) {
+                console.error("Signup error:", error);
+                customAlert("Could not create your profile. Please try again.", "error");
+                button.disabled = false; button.textContent = "Let's Get Started";
+            }
+        }
+
+        function showView(viewId) {
+            const main = document.getElementById('main-content');
+            const views = {
+                'home-view': `<header class="header"><div class="greeting"><h1 class="title" id="greeting-title">Hello, User!</h1><p class="subtitle">Welcome to CoinTaskers</p></div><div class="profile-pic" id="profile-pic">U</div></header><div class="balance-card"><p class="label">Your Balance</p><h2 class="balance-value"><span id="balance-value">0</span> CT</h2><p class="balance-usd">≈ $<span id="balance-usd-value">0.00</span> USD</p></div><div class="action-buttons"><button class="btn btn-primary" onclick="showView('package-view')"><i class="fa-solid fa-rocket"></i> Upgrade Plan</button><button class="btn btn-secondary" onclick="showWithdrawalModal()"><i class="fa-solid fa-paper-plane"></i> Withdraw</button></div><div class="package-info-card" style="background:var(--card-color); padding: 1rem; border-radius: 15px; box-shadow: var(--shadow); text-align: center;"><h3 class="section-title" style="margin-bottom: 0.5rem;">Your Plan</h3><p style="margin:0; font-size: 1.2rem; font-weight: 600; color: var(--primary-color);" id="user-package-name">Free</p><p style="margin-top: 5px; color: var(--text-secondary);" id="user-package-expiry">No Expiry</p></div>`,
+                'tasks-view': `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"><h2 class="section-title" style="margin: 0;">Daily Ad Tasks</h2><p id="ad-limit-text" style="color: var(--text-secondary); font-size: 0.9rem;">Ads Left: 10</p></div><div class="task-card" onclick="handleAdTask()"><div class="task-icon"><i class="fa-solid fa-rectangle-ad"></i></div><div class="task-details"><h3>Watch Ad</h3><p>Watch a short ad to earn.</p></div><div class="task-reward">+${REWARDS.ad} CT</div></div><h2 class="section-title" style="margin-top: 2rem;">Channel Tasks</h2><div id="channel-tasks-container"></div>`,
+                'package-view': `<div id="current-plan-container"></div><div class="package-grid" id="package-container">Loading packages...</div>`,
+                'invite-view': `<div class="task-card" style="flex-direction: column; text-align: center; padding: 1.2rem;"><p class="text-secondary">You have invited</p><p class="balance-value" style="font-size: 2rem; margin-top: 5px;" id="referral-count">0 Users</p></div><div class="invite-card"><i class="fa-solid fa-users" style="font-size: 3rem;"></i><h3 style="margin: 1rem 0 0.5rem;">Invite Friends, Earn ${REWARDS.referral} CT!</h3><p>Share your link and get ${REWARDS.referral} CT for every friend who joins.</p><div class="ref-link-wrapper" id="ref-link"></div><button class="btn" id="copy-ref-link" onclick="copyRefLink()"><i class="fa-solid fa-copy"></i> Copy Link</button></div>`,
+                'signup-view': `<div style="text-align: center; padding: 40px 20px; display: flex; flex-direction: column; justify-content: center; height: 100%;"><i class="fa-solid fa-coins" style="font-size: 4rem; color: var(--accent-color);"></i><h1 style="font-size: 2rem; margin-top: 1.5rem;">Welcome to CoinTasker!</h1><p style="color: var(--text-secondary); font-size: 1.1rem; margin-top: 0;">The best place to earn rewards by completing simple tasks.</p><button class="btn btn-primary" style="width: 100%; margin-top: 2rem; padding: 1rem;" onclick="completeSignup()">Let's Get Started</button></div>`
+            };
+            main.innerHTML = `<div id="${viewId}" class="view active">${views[viewId]}</div>`;
+            
+            if (viewId !== 'signup-view') {
+                document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+                document.querySelector(`.nav-button[onclick="showView('${viewId}')"]`).classList.add('active');
+            }
+            
+            if (viewId === 'package-view') renderPackages();
+            if (viewId === 'tasks-view') loadChannelTasks();
+            updateUI();
+            if(viewId === 'invite-view') document.getElementById('referral-count').textContent = `${userData.referralCount || 0} Users`;
+        }
+
+        function customAlert(message, type = 'success') { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.showAlert) { Telegram.WebApp.showAlert(message); if (Telegram.WebApp.HapticFeedback) { Telegram.WebApp.HapticFeedback.notificationOccurred(type === 'success' ? 'success' : 'error'); } } else { alert(message); } }
+        
+        function handleAdTask() { const currentPackageKey = userData.activePackage || 'free'; const currentPackage = appPackages[currentPackageKey] || appPackages['free']; const adLimit = currentPackage.adLimit; if ((userData.dailyAdCount || 0) >= adLimit) { return customAlert(`Daily ad limit reached.`, 'error'); } if (typeof show_9819312 !== 'function') { return customAlert("Ad system not ready.", 'error'); } customAlert("Loading ad..."); show_9819312().then(async () => { await userRef.update({ balance: firebase.firestore.FieldValue.increment(REWARDS.ad), dailyAdCount: firebase.firestore.FieldValue.increment(1) }); customAlert(`+${REWARDS.ad} CT for watching an ad!`); }).catch(error => { customAlert("Ad could not be shown.", 'error'); }); }
+        function showDepositModal() { document.getElementById('deposit-modal').style.display = 'flex'; }
+        function hideDepositModal() { document.getElementById('deposit-modal').style.display = 'none'; }
+        async function buyPackage(packageKey) { const pkg = appPackages[packageKey]; if (!pkg || pkg.price === 0) return; currentPackageToBuy = packageKey; document.getElementById('deposit-modal-title').textContent = `Activate ${pkg.name} Plan ($${pkg.price})`; document.getElementById('deposit-amount').value = pkg.price; showDepositModal(); }
+        async function submitDepositRequest() { const txid = document.getElementById('deposit-txid').value.trim(); const amount = parseFloat(document.getElementById('deposit-amount').value); if (!currentPackageToBuy || !txid || isNaN(amount) || amount <= 0) return customAlert("Please fill all fields.", "error"); try { await db.collection("manualDeposits").add({ userId: tgUser.id.toString(), username: `@${tgUser.username || userData.firstName}`, txid: txid, amount: amount, packageKey: currentPackageToBuy, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() }); hideDepositModal(); customAlert("Deposit request submitted!", "success"); } catch (e) { customAlert("Failed to submit request.", "error"); } }
+        function copyToClipboard(elementId) { const text = document.getElementById(elementId).innerText; navigator.clipboard.writeText(text).then(() => customAlert('Copied!'), () => customAlert('Failed to copy.', 'error')); }
+        
+        function renderPackages() {
+            const currentPlanContainer = document.getElementById('current-plan-container'); const packageContainer = document.getElementById('package-container'); currentPlanContainer.innerHTML = ''; packageContainer.innerHTML = '';
+            const currentKey = userData.activePackage || 'free'; const currentPkg = appPackages[currentKey];
+            if (currentPkg) { const dailyEarning = (currentPkg.adLimit * REWARDS.ad) / CT_PER_USD; currentPlanContainer.innerHTML = `<div class="current-plan-card"><h3>${currentPkg.name}</h3><ul><li><i class="fa-solid fa-check"></i> ${currentPkg.adLimit} Ads Daily</li><li><i class="fa-solid fa-check"></i> Earn up to $${dailyEarning.toFixed(2)}/day</li><li><i class="fa-solid fa-check"></i> Withdrawal Access ${currentKey === 'free' ? '<i class="fa-solid fa-times" style="color: red; margin-left: 5px;"></i>' : ''}</li></ul><button class="btn-buy" disabled>Current Plan</button></div>`; }
+            const activePackages = Object.entries(appPackages).filter(([key, pkg]) => key !== 'free' && key !== currentKey && pkg.isActive);
+            if (activePackages.length === 0) { packageContainer.innerHTML = "<p>No other packages available right now.</p>"; return; }
+            activePackages.forEach(([key, pkg]) => { const dailyEarning = (pkg.adLimit * REWARDS.ad) / CT_PER_USD; packageContainer.innerHTML += `<div class="package-card"><h3>${pkg.name}</h3><div class="price">$${pkg.price}<small>/${pkg.durationDays} days</small></div><ul><li><i class="fa-solid fa-check"></i> ${pkg.adLimit} Ads Daily</li><li><i class="fa-solid fa-check"></i> Earn up to $${dailyEarning.toFixed(2)}/day</li><li><i class="fa-solid fa-check"></i> Withdrawal Access</li></ul><button class="btn-buy" onclick="buyPackage('${key}')">Activate Plan</button></div>`; });
+        }
+        
+        async function loadChannelTasks() {
+            const container = document.getElementById('channel-tasks-container'); container.innerHTML = `<p style="color:var(--text-secondary)">Loading channels...</p>`;
+            try {
+                const querySnapshot = await db.collection("channels").get(); container.innerHTML = '';
+                if (querySnapshot.empty) { container.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">No channel tasks available.</p>'; return; }
+                querySnapshot.forEach((doc) => {
+                    const channel = doc.data(); const isClaimed = (userData.claimedChannels || []).includes(doc.id);
+                    const buttonHTML = isClaimed ? `<div class="task-reward">Completed</div>` : `<div class="task-reward"><button class="verify-btn" onclick="initiateChannelJoin(this)" data-id="${doc.id}" data-link="${channel.link}" data-reward="${channel.reward}">+${channel.reward} CT</button></div>`;
+                    container.innerHTML += `<div class="task-card ${isClaimed ? 'disabled' : ''}"><div class="task-icon"><i class="fa-brands fa-telegram"></i></div><div class="task-details"><h3>${channel.name}</h3><p>Join our channel for a reward.</p></div>${buttonHTML}</div>`;
+                });
+            } catch (error) { container.innerHTML = '<p style="color:red">Could not load tasks.</p>'; }
+        }
+        function initiateChannelJoin(element) { Telegram.WebApp.openTelegramLink(element.dataset.link); element.textContent = 'Verify'; element.setAttribute('onclick', `verifyChannelJoin(this)`); }
+        async function verifyChannelJoin(element) {
+            element.textContent = '...'; element.disabled = true;
+            try {
+                const response = await fetch(`${REPLIT_BOT_URL}/verify-join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData: Telegram.WebApp.initData, channelId: element.dataset.id }) });
+                const result = await response.json();
+                if (!result.success) { element.textContent = 'Verify'; element.disabled = false; customAlert(result.error || "Verification failed.", "error"); } else { customAlert(result.message); }
+            } catch (error) { element.textContent = 'Verify'; element.disabled = false; customAlert("Connection error.", "error"); }
+        }
+        
+        function showWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'flex'; }
+        function hideWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'none'; }
+        function toggleWithdrawalInput() { const method = document.getElementById('withdrawal-method').value; document.getElementById('usdt-input-group').style.display = method === 'usdt' ? 'block' : 'none'; document.getElementById('binance-input-group').style.display = method === 'binance' ? 'block' : 'none'; }
+        async function requestWithdrawal() {
+            if (userData.activePackage === 'free' || !userData.activePackage) return customAlert("You must have an active paid package to withdraw.", 'error');
+            const amount = parseFloat(document.getElementById('withdrawal-amount').value);
+            const method = document.getElementById('withdrawal-method').value;
+            let paymentDetail = (method === 'usdt') ? document.getElementById('withdrawal-address').value.trim() : document.getElementById('withdrawal-binance-id').value.trim();
+            if (!paymentDetail) return customAlert("Please provide payment details.", 'error');
+            if (isNaN(amount) || amount < MIN_WITHDRAWAL_CT || amount > userData.balance) return customAlert("Invalid or insufficient amount.", 'error');
+            try {
+                await db.collection("withdrawals").add({ userId: tgUser.id.toString(), username: `@${tgUser.username || userData.firstName}`, amount: amount, amountUSD: amount / CT_PER_USD, method: method.toUpperCase(), paymentDetail: paymentDetail, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                hideWithdrawalModal(); customAlert("Withdrawal request sent successfully!");
+            } catch (e) { customAlert("Failed to send request.", 'error'); }
+        }
+        function copyRefLink() { const link = document.getElementById('ref-link').textContent; navigator.clipboard.writeText(link).then(() => { customAlert("Referral link copied!"); }, () => { customAlert("Failed to copy link.", 'error'); }); }
+    </script>
+</body>
+</html>
