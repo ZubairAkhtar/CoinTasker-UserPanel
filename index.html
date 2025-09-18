@@ -111,7 +111,8 @@
         <div class="modal-content">
             <h2 class="section-title">Request Withdrawal</h2>
             <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Minimum: 10,000 CT ($10). Requires an active package.</p>
-            <div class="input-group"><label for="withdrawal-amount">Amount (CT)</label><input type="number" id="withdrawal-amount" class="input-field" placeholder="e.g., 15000"></div>
+            <div class="input-group"><label for="withdrawal-amount">Amount (CT)</label><input type="number" id="withdrawal-amount" class="input-field" value="10000" min="10000" max="10000" step="10000" oninput="if(this.value==='') return; this.value=Math.max(10000,Math.min(10000,Number(this.value)));" required>
+</div>
             <div class="input-group"><label for="withdrawal-method">Withdrawal Method</label><select id="withdrawal-method" class="input-field" onchange="toggleWithdrawalInput()"><option value="usdt">USDT (BEP20)</option><option value="binance">Binance ID</option></select></div>
             <div class="input-group" id="usdt-input-group"><label for="withdrawal-address">USDT (BEP20) Address</label><input type="text" id="withdrawal-address" class="input-field" placeholder="0x..."></div>
             <div class="input-group" id="binance-input-group" style="display: none;"><label for="withdrawal-binance-id">Binance ID</label><input type="text" id="withdrawal-binance-id" class="input-field" placeholder="Enter your Binance ID"></div>
