@@ -353,16 +353,100 @@
         function hideWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'none'; }
         function toggleWithdrawalInput() { const method = document.getElementById('withdrawal-method').value; document.getElementById('usdt-input-group').style.display = method === 'usdt' ? 'block' : 'none'; document.getElementById('binance-input-group').style.display = method === 'binance' ? 'block' : 'none'; }
         async function requestWithdrawal() {
-            if (userData.activePackage === 'free' || !userData.activePackage) return customAlert("You must have an active paid package to withdraw.", 'error');
             const amount = parseFloat(document.getElementById('withdrawal-amount').value);
-            const method = document.getElementById('withdrawal-method').value;
-            let paymentDetail = (method === 'usdt') ? document.getElementById('withdrawal-address').value.trim() : document.getElementById('withdrawal-binance-id').value.trim();
-            if (!paymentDetail) return customAlert("Please provide payment details.", 'error');
-            if (isNaN(amount) || amount < MIN_WITHDRAWAL_CT || amount > userData.balance) return customAlert("Invalid or insufficient amount.", 'error');
-            try {
-                await db.collection("withdrawals").add({ userId: tgUser.id.toString(), username: `@${tgUser.username || userData.firstName}`, amount: amount, amountUSD: amount / CT_PER_USD, method: method.toUpperCase(), paymentDetail: paymentDetail, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() });
-                hideWithdrawalModal(); customAlert("Withdrawal request sent successfully!");
-            } catch (e) { customAlert("Failed to send request.", 'error'); }
+    const method = document.getElementById('withdrawal-method').value;
+    const paymentDetail = (method === 'usdt')
+        ? document.getElementById('withdrawal-address').value.trim()
+        : document.getElementById('withdrawal-binance-id').value.trim();
+
+    const withdrawalsRef = db.collection("withdrawals");
+
+    try {
+        // Condition 1: Active paid package
+        if (!userData.activePackage || userData.activePackage === 'free') {
+            hideWithdrawalModal();
+            alert("❌ You must have an active paid package to withdraw.");
+        } 
+        // Condition 2: Payment details
+        else if (!paymentDetail) {
+            hideWithdrawalModal();
+            alert("❌ Please provide payment details.");
+        } 
+        // Condition 3: Valid amount
+        else if (isNaN(amount) || amount < MIN_WITHDRAWAL_CT || amount > userData.balance) {
+            hideWithdrawalModal();
+            alert("❌ Invalid or insufficient amount.");
+        } 
+        // Condition 4: Pending withdrawal
+        else {
+            const pendingSnapshot = await withdrawalsRef
+                .where("userId", "==", tgUser.id.toString())
+                .where("status", "==", "pending")
+                .get();
+
+            if (!pendingSnapshot.empty) {
+                hideWithdrawalModal();
+                alert("❌ You already have a pending withdrawal request. Please wait for it to be processed.");
+            } 
+            // Condition 5: Approved withdrawal today
+            else {
+                const approvedSnapshot = await withdrawalsRef
+                    .where("userId", "==", tgUser.id.toString())
+                    .where("status", "==", "approved")
+                    .get();
+
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+                const todayEnd = new Date();
+                todayEnd.setHours(23, 59, 59, 999);
+
+                let hasApprovedToday = false;
+
+                approvedSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    let requestedAt = null;
+
+                    // Safely convert Firestore timestamp
+                    if (data.requestedAt && data.requestedAt.toDate) {
+                        requestedAt = data.requestedAt.toDate();
+                    } else if (data.requestedAt) {
+                        requestedAt = new Date(data.requestedAt);
+                    }
+
+                    if (!requestedAt) return;
+
+                    if (requestedAt >= todayStart && requestedAt <= todayEnd) {
+                        hasApprovedToday = true;
+                    }
+                });
+
+                if (hasApprovedToday) {
+                    hideWithdrawalModal();
+                    alert("❌ You have already received an approved withdrawal today. You can submit a new request tomorrow.");
+                } 
+                // ✅ All conditions passed, submit withdrawal
+                else {
+                    await withdrawalsRef.add({
+                        userId: tgUser.id.toString(),
+                        username: `@${tgUser.username || userData.firstName}`,
+                        amount: amount,
+                        amountUSD: amount / CT_PER_USD,
+                        method: method.toUpperCase(),
+                        paymentDetail: paymentDetail,
+                        status: "pending",
+                        requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    hideWithdrawalModal();
+                    alert("✅ Withdrawal request submitted successfully! Your withdrawal will be approved soon.");
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Withdrawal error:", e);
+        hideWithdrawalModal();
+        alert("❌ Withdrawal request failed due to an error. Please try again.");
+    }
         }
         function copyRefLink() { const link = document.getElementById('ref-link').textContent; navigator.clipboard.writeText(link).then(() => { customAlert("Referral link copied!"); }, () => { customAlert("Failed to copy link.", 'error'); }); }
     </script>
