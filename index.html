@@ -110,7 +110,7 @@
     <div id="withdrawal-modal" class="modal-backdrop">
         <div class="modal-content">
             <h2 class="section-title">Request Withdrawal</h2>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Minimum: 10,000 CT ($10). Requires an active package.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Minimum: 5,000 CT ($10). Requires an active package.</p>
             <div class="input-group"><label for="withdrawal-amount">Amount (CT)</label><input type="number" id="withdrawal-amount" class="input-field" value="5000" min="5000" max="5000" step="5000" oninput="if(this.value==='') return; this.value=Math.max(5000,Math.min(5000,Number(this.value)));" required>
 </div>
             <div class="input-group"><label for="withdrawal-method">Withdrawal Method</label><select id="withdrawal-method" class="input-field" onchange="toggleWithdrawalInput()"><option value="usdt">USDT (BEP20)</option><option value="binance">Binance ID</option></select></div>
