@@ -315,7 +315,44 @@
         function showDepositModal() { document.getElementById('deposit-modal').style.display = 'flex'; }
         function hideDepositModal() { document.getElementById('deposit-modal').style.display = 'none'; }
         async function buyPackage(packageKey) { const pkg = appPackages[packageKey]; if (!pkg || pkg.price === 0) return; currentPackageToBuy = packageKey; document.getElementById('deposit-modal-title').textContent = `Activate ${pkg.name} Plan ($${pkg.price})`; document.getElementById('deposit-amount').value = pkg.price; showDepositModal(); }
-        async function submitDepositRequest() { const txid = document.getElementById('deposit-txid').value.trim(); const amount = parseFloat(document.getElementById('deposit-amount').value); if (!currentPackageToBuy || !txid || isNaN(amount) || amount <= 0) return customAlert("Please fill all fields.", "error"); try { await db.collection("manualDeposits").add({ userId: tgUser.id.toString(), username: `@${tgUser.username || userData.firstName}`, txid: txid, amount: amount, packageKey: currentPackageToBuy, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() }); hideDepositModal(); customAlert("Deposit request submitted!", "success"); } catch (e) { customAlert("Failed to submit request.", "error"); } }
+        async function submitDepositRequest() { 
+            const txid = document.getElementById('deposit-txid').value.trim();
+    const amount = parseFloat(document.getElementById('deposit-amount').value);
+
+    if (!currentPackageToBuy || !txid || isNaN(amount) || amount <= 0) {
+        return alert("Please fill all fields.", "error");
+    }
+
+    try {
+        // Check if user already has a pending deposit
+        const pendingQuery = await db.collection("manualDeposits")
+            .where("userId", "==", tgUser.id.toString())
+            .where("status", "==", "pending")
+            .get();
+
+        if (!pendingQuery.empty) {
+            return alert("You already have a pending deposit request. Please wait for it to be approved before submitting another.", "error");
+        }
+
+        // No pending deposit, allow new request
+        await db.collection("manualDeposits").add({
+            userId: tgUser.id.toString(),
+            username: `@${tgUser.username || userData.firstName}`,
+            txid: txid,
+            amount: amount,
+            packageKey: currentPackageToBuy,
+            status: "pending",
+            requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        hideDepositModal();
+        alert("Deposit request submitted!", "success");
+
+    } catch (e) {
+        console.error("Deposit error:", e);
+        alert("Failed to submit request.", "error");
+    }
+        }
         function copyToClipboard(elementId) { const text = document.getElementById(elementId).innerText; navigator.clipboard.writeText(text).then(() => customAlert('Copied!'), () => customAlert('Failed to copy.', 'error')); }
         
         function renderPackages() {
