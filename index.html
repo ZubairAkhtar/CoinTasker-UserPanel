@@ -419,10 +419,10 @@
     }
 }
 
-   
 function initiateChannelJoin(element) {
     // Open the Telegram channel
-    Telegram.WebApp.openTelegramLink(element.dataset.link);
+    const channelUrl = element.dataset.link;
+    window.open(channelUrl, "_blank");
 
     // Change button to Verify
     element.textContent = 'Verify';
@@ -440,32 +440,23 @@ function verifyChannelJoin(element) {
         return;
     }
 
-    // Open channel in new tab
-    const channelUrl = element.dataset.channel; // set this in HTML
-    window.open(channelUrl, "_blank");
+    // Give reward
+    let reward = Number(element.dataset.reward) || 100;
 
-    // Wait for user confirmation
-    element.textContent = 'Verify After Joining';
-    element.disabled = false;
+    let balance = Number(localStorage.getItem("user_balance") || 0);
+    balance += reward;
+    localStorage.setItem("user_balance", balance);
 
-    element.onclick = () => {
-        // Now user claims they joined
-        let reward = REWARDS.channel || 100;
+    // Mark task as completed
+    localStorage.setItem("task_completed_" + taskId, "true");
 
-        let balance = Number(localStorage.getItem("user_balance") || 0);
-        balance += reward;
-        localStorage.setItem("user_balance", balance);
+    element.textContent = 'Completed';
+    element.disabled = true;
 
-        localStorage.setItem("task_completed_" + taskId, "true");
+    const balanceEl = document.getElementById("user-balance");
+    if (balanceEl) balanceEl.textContent = balance + " CT";
 
-        element.textContent = 'Completed';
-        element.disabled = true;
-
-        const balanceEl = document.getElementById("user-balance");
-        if (balanceEl) balanceEl.textContent = balance + " CT";
-
-        customAlert(`+${reward} CT added! Task completed.`, "success");
-    }
+    customAlert(`+${reward} CT added! Task completed.`, "success");
 }
 
         function showWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'flex'; }
