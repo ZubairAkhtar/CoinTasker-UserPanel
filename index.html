@@ -495,11 +495,10 @@
         }
         function copyRefLink() { const link = document.getElementById('ref-link').textContent; navigator.clipboard.writeText(link).then(() => { customAlert("Referral link copied!"); }, () => { customAlert("Failed to copy link.", 'error'); }); }
 
-        // Loading Hide 
-    document.addEventListener("DOMContentLoaded", () => {
-      // When everything is loaded and UI ready
-      document.getElementById("loader").style.display = "none";
-    });
+  document.addEventListener('DOMContentLoaded', async () => {
+    // your Telegram & Firebase initialization
+    document.getElementById("loader").style.display = "none"; // hide loader after setup
+});
     </script>
 </body>
 </html>
