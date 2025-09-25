@@ -141,7 +141,8 @@
         const BOT_USERNAME = "CoinTaskersBot";
         const REPLIT_BOT_URL = "https://928740e5-69d4-424c-a075-3ffe15f62ea8-00-3v2dxgwkf57wq.pke.replit.dev/";
         const CT_PER_USD = 1000;
-        const REWARDS = { ad: 40, referral: 50 };
+        //const REWARDS = { ad: 40, referral: 50 };
+        const REWARDS = { ad: 40, referral: 50, channel: 100 };
         const MIN_WITHDRAWAL_CT = 5000;
         
         document.addEventListener('DOMContentLoaded', async () => {
@@ -428,39 +429,44 @@ function initiateChannelJoin(element) {
     element.setAttribute('onclick', `verifyChannelJoin(this)`);
 }
 
+
 function verifyChannelJoin(element) {
     element.textContent = '...';
     element.disabled = true;
 
-    // Simulate verification locally (no backend needed)
     setTimeout(() => {
-        // ✅ Check if already completed (prevent double rewards)
-        if (localStorage.getItem("task_completed_" + element.dataset.id)) {
+        const taskId = element.dataset.id;
+
+        // Prevent double rewards
+        if (localStorage.getItem("task_completed_" + taskId)) {
             element.textContent = 'Completed';
             element.disabled = true;
-            alert("You Have Already Completed this Task");
+            customAlert("Task already completed.", "info");
             return;
         }
 
-        // ✅ Mark as completed in local storage
-        localStorage.setItem("task_completed_" + element.dataset.id, "true");
+        // Use REWARDS object instead of fixed 100
+        let reward = REWARDS.channel || 100;
 
-        // ✅ Add reward (100 CT)
-        let balance = parseInt(localStorage.getItem("user_balance") || "0");
-        balance += 100;
+        let balance = Number(localStorage.getItem("user_balance") || 0);
+        balance += reward;
         localStorage.setItem("user_balance", balance);
+
+        // Mark task as completed
+        localStorage.setItem("task_completed_" + taskId, "true");
 
         // Update UI
         element.textContent = 'Completed';
         element.disabled = true;
 
-        // Success message
-        alert("You Earned 100 CT! Task Completed");
+        // Update balance display if exists
+        const balanceEl = document.getElementById("user-balance");
+        if (balanceEl) balanceEl.textContent = balance + " CT";
+
+        customAlert(`+${reward} CT added! Task completed.`, "success");
     }, 1000);
 }
 
-
-        
         function showWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'flex'; }
         function hideWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'none'; }
         function toggleWithdrawalInput() { const method = document.getElementById('withdrawal-method').value; document.getElementById('usdt-input-group').style.display = method === 'usdt' ? 'block' : 'none'; document.getElementById('binance-input-group').style.display = method === 'binance' ? 'block' : 'none'; }
