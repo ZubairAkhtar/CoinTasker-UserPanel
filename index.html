@@ -372,101 +372,94 @@
             activePackages.forEach(([key, pkg]) => { const dailyEarning = (pkg.adLimit * REWARDS.ad) / CT_PER_USD; packageContainer.innerHTML += `<div class="package-card"><h3>${pkg.name}</h3><div class="price">$${pkg.price}<small>/${pkg.durationDays} days</small></div><ul><li><i class="fa-solid fa-check"></i> ${pkg.adLimit} Ads Daily</li><li><i class="fa-solid fa-check"></i> Earn up to $${dailyEarning.toFixed(2)}/day</li><li><i class="fa-solid fa-check"></i> Withdrawal Access</li></ul><button class="btn-buy" onclick="buyPackage('${key}')">Activate Plan</button></div>`; });
         }
         //ChannelTask
-        async function loadChannelTasks() {
+        
+   async function loadChannelTasks() {
     const container = document.getElementById('channel-tasks-container');
     container.innerHTML = `<p style="color:var(--text-secondary)">Loading channels...</p>`;
 
     try {
         const querySnapshot = await db.collection("channels").get();
+        container.innerHTML = '';
+
         if (querySnapshot.empty) {
             container.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">No channel tasks available.</p>';
             return;
         }
 
-        let html = '';
-        const claimed = (window.userData?.claimedChannels || []);
         querySnapshot.forEach((doc) => {
             const channel = doc.data();
-            const isClaimed = claimed.includes(doc.id);
+            const taskCompleted = localStorage.getItem("task_completed_" + doc.id) === "true";
 
-            const buttonHTML = isClaimed 
-                ? `<div class="task-reward">Completed</div>` 
-                : `<div class="task-reward"><button class="verify-btn" onclick="initiateChannelJoin(this)" data-id="${doc.id}" data-link="${channel.link}" data-reward="${channel.reward}">+${channel.reward} CT</button></div>`;
+            const buttonHTML = taskCompleted
+                ? `<div class="task-reward">Completed</div>`
+                : `<div class="task-reward">
+                        <button class="verify-btn" 
+                                onclick="initiateChannelJoin(this)" 
+                                data-id="${doc.id}" 
+                                data-link="${channel.link}" 
+                                data-reward="${channel.reward}">
+                                +${channel.reward} CT
+                        </button>
+                   </div>`;
 
-            html += `<div class="task-card ${isClaimed ? 'disabled' : ''}">
-                        <div class="task-icon"><i class="fa-brands fa-telegram"></i></div>
-                        <div class="task-details">
-                            <h3>${channel.name}</h3>
-                            <p>Join our channel for a reward.</p>
-                        </div>
-                        ${buttonHTML}
-                    </div>`;
+            container.innerHTML += `
+                <div class="task-card ${taskCompleted ? 'disabled' : ''}">
+                    <div class="task-icon"><i class="fa-brands fa-telegram"></i></div>
+                    <div class="task-details">
+                        <h3>${channel.name}</h3>
+                        <p>Join our channel for a reward.</p>
+                    </div>
+                    ${buttonHTML}
+                </div>`;
         });
-
-        container.innerHTML = html;
     } catch (error) {
         console.error(error);
         container.innerHTML = '<p style="color:red">Could not load tasks.</p>';
     }
 }
 
+   
 function initiateChannelJoin(element) {
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.openTelegramLink(element.dataset.link);
-    } else {
-        window.open(element.dataset.link, "_blank");
-    }
+    // Open the Telegram channel
+    Telegram.WebApp.openTelegramLink(element.dataset.link);
+
+    // Change button to Verify
     element.textContent = 'Verify';
     element.setAttribute('onclick', `verifyChannelJoin(this)`);
 }
 
-async function verifyChannelJoin(element) {
+function verifyChannelJoin(element) {
     element.textContent = '...';
     element.disabled = true;
-    try {
-        const response = await fetch(`${REPLIT_BOT_URL}/verify-join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                initData: Telegram.WebApp.initData,
-                channelId: element.dataset.id
-            })
-        });
-        const result = await response.json();
 
-        if (!result.success) {
-            element.textContent = 'Verify';
-            element.disabled = false;
-            customAlert(result.error || "Verification failed.", "error");
-        } else {
-            // mark as completed
-            element.parentElement.innerHTML = `<div class="task-reward">Completed</div>`;
-
-            // reward user 50 CT
-            let reward = parseInt(element.dataset.reward) || 50; // fallback 50
-            if (window.userData) {
-                window.userData.balance = (window.userData.balance || 0) + reward;
-            }
-
-            // update balance in UI (if you have a balance element)
-            const balanceEl = document.getElementById("user-balance");
-            if (balanceEl) {
-                balanceEl.textContent = window.userData.balance + " CT";
-            }
-
-            // show confirmation
-            customAlert(`Success! You received +${reward} CT 🎉`);
+    // Simulate verification locally (no backend needed)
+    setTimeout(() => {
+        // ✅ Check if already completed (prevent double rewards)
+        if (localStorage.getItem("task_completed_" + element.dataset.id)) {
+            element.textContent = 'Completed';
+            element.disabled = true;
+            alert("You Have Already Completed this Task");
+            return;
         }
-    } catch (error) {
-        console.error(error);
-        element.textContent = 'Verify';
-        element.disabled = false;
-        customAlert("Connection error.", "error");
-    }
+
+        // ✅ Mark as completed in local storage
+        localStorage.setItem("task_completed_" + element.dataset.id, "true");
+
+        // ✅ Add reward (100 CT)
+        let balance = parseInt(localStorage.getItem("user_balance") || "0");
+        balance += 100;
+        localStorage.setItem("user_balance", balance);
+
+        // Update UI
+        element.textContent = 'Completed';
+        element.disabled = true;
+
+        // Success message
+        alert("You Earned 100 CT! Task Completed");
+    }, 1000);
 }
 
-       
-     
+
         
         function showWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'flex'; }
         function hideWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'none'; }
