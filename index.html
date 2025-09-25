@@ -320,7 +320,7 @@
     const amount = parseFloat(document.getElementById('deposit-amount').value);
 
     if (!currentPackageToBuy || !txid || isNaN(amount) || amount <= 0) {
-        return alert("Please fill all fields.", "error");
+        return alert("Please Submit Payment Details");
     }
 
     try {
@@ -331,7 +331,7 @@
             .get();
 
         if (!pendingQuery.empty) {
-            return alert("You already have a pending deposit request. Please wait for it to be approved before submitting another.", "error");
+            return alert("Your Deposit Reaquest Already Pending!);
         }
 
         // No pending deposit, allow new request
@@ -346,11 +346,11 @@
         });
 
         hideDepositModal();
-        alert("Deposit request submitted!", "success");
+        alert("Deposit Request Submitted Successfully!");
 
     } catch (e) {
         console.error("Deposit error:", e);
-        alert("Failed to submit request.", "error");
+        alert("Withdrawal Request Failed, Please Try Again");
     }
         }
         function copyToClipboard(elementId) { const text = document.getElementById(elementId).innerText; navigator.clipboard.writeText(text).then(() => customAlert('Copied!'), () => customAlert('Failed to copy.', 'error')); }
@@ -402,17 +402,17 @@
         // Condition 1: Active paid package
         if (!userData.activePackage || userData.activePackage === 'free') {
             hideWithdrawalModal();
-            alert("❌ You must have an active paid package to withdraw.");
+            alert("Buy Any Package To Submit Withdraw");
         } 
         // Condition 2: Payment details
         else if (!paymentDetail) {
             hideWithdrawalModal();
-            alert("❌ Please provide payment details.");
+            alert("Please Provide Payment Details");
         } 
         // Condition 3: Valid amount
         else if (isNaN(amount) || amount < MIN_WITHDRAWAL_CT || amount > userData.balance) {
             hideWithdrawalModal();
-            alert("❌ Invalid or insufficient amount.");
+            alert("Invalid Withdraw Amount");
         } 
         // Condition 4: Pending withdrawal
         else {
@@ -423,7 +423,7 @@
 
             if (!pendingSnapshot.empty) {
                 hideWithdrawalModal();
-                alert("❌ You already have a pending withdrawal request. Please wait for it to be processed.");
+                alert("Your Withdraw Request Pending");
             } 
             // Condition 5: Approved withdrawal today
             else {
@@ -459,7 +459,7 @@
 
                 if (hasApprovedToday) {
                     hideWithdrawalModal();
-                    alert("❌ You have already received an approved withdrawal today. You can submit a new request tomorrow.");
+                    alert("You Already Received Withdraw Today, Try Again Tomorrow");
                 } 
                 // ✅ All conditions passed, submit withdrawal
                 else {
@@ -475,14 +475,14 @@
                     });
 
                     hideWithdrawalModal();
-                    alert("✅ Withdrawal request submitted successfully! Your withdrawal will be approved soon.");
+                    alert("Withdrawal Request Submitted Successfully!");
                 }
             }
         }
     } catch (e) {
         console.error("Withdrawal error:", e);
         hideWithdrawalModal();
-        alert("❌ Withdrawal request failed due to an error. Please try again.");
+        alert("Withdrawal Request Failed, Please Try Again");
     }
         }
         function copyRefLink() { const link = document.getElementById('ref-link').textContent; navigator.clipboard.writeText(link).then(() => { customAlert("Referral link copied!"); }, () => { customAlert("Failed to copy link.", 'error'); }); }
