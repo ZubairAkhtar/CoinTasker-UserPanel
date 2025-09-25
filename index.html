@@ -429,42 +429,43 @@ function initiateChannelJoin(element) {
     element.setAttribute('onclick', `verifyChannelJoin(this)`);
 }
 
-
 function verifyChannelJoin(element) {
-    element.textContent = '...';
-    element.disabled = true;
+    const taskId = element.dataset.id;
 
-    setTimeout(() => {
-        const taskId = element.dataset.id;
+    // Prevent double rewards
+    if (localStorage.getItem("task_completed_" + taskId)) {
+        element.textContent = 'Completed';
+        element.disabled = true;
+        customAlert("Task already completed.", "info");
+        return;
+    }
 
-        // Prevent double rewards
-        if (localStorage.getItem("task_completed_" + taskId)) {
-            element.textContent = 'Completed';
-            element.disabled = true;
-            customAlert("Task already completed.", "info");
-            return;
-        }
+    // Open channel in new tab
+    const channelUrl = element.dataset.channel; // set this in HTML
+    window.open(channelUrl, "_blank");
 
-        // Use REWARDS object instead of fixed 100
+    // Wait for user confirmation
+    element.textContent = 'Verify After Joining';
+    element.disabled = false;
+
+    element.onclick = () => {
+        // Now user claims they joined
         let reward = REWARDS.channel || 100;
 
         let balance = Number(localStorage.getItem("user_balance") || 0);
         balance += reward;
         localStorage.setItem("user_balance", balance);
 
-        // Mark task as completed
         localStorage.setItem("task_completed_" + taskId, "true");
 
-        // Update UI
         element.textContent = 'Completed';
         element.disabled = true;
 
-        // Update balance display if exists
         const balanceEl = document.getElementById("user-balance");
         if (balanceEl) balanceEl.textContent = balance + " CT";
 
         customAlert(`+${reward} CT added! Task completed.`, "success");
-    }, 1000);
+    }
 }
 
         function showWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'flex'; }
