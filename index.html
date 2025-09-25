@@ -143,6 +143,7 @@
                 tgUser = Telegram.WebApp.initDataUnsafe.user;
             } else {
                 console.warn("Running in browser. Faking user data.");
+                alert("Kindly Open in Telegram App Or Use VPN");
                 tgUser = { id: 123456, first_name: 'Browser', last_name: 'User', username: 'browseruser', photo_url: '' };
             }
             
