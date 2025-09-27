@@ -120,9 +120,10 @@
             <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Minimum: 5,000 CT ($5). Requires an active package.</p>
             <div class="input-group"><label for="withdrawal-amount">Amount (CT)</label><input type="number" id="withdrawal-amount" class="input-field" value="5000" min="5000" max="5000" step="5000" oninput="if(this.value==='') return; this.value=Math.max(5000,Math.min(5000,Number(this.value)));" required>
 </div>
-            <div class="input-group"><label for="withdrawal-method">Withdrawal Method</label><select id="withdrawal-method" class="input-field" onchange="toggleWithdrawalInput()"><option value="usdt">USDT (BEP20)</option><option value="binance">Binance ID</option></select></div>
-            <div class="input-group" id="usdt-input-group"><label for="withdrawal-address">USDT (BEP20) Address</label><input type="text" id="withdrawal-address" class="input-field" placeholder="0x..."></div>
-            <div class="input-group" id="binance-input-group" style="display: none;"><label for="withdrawal-binance-id">Binance ID</label><input type="text" id="withdrawal-binance-id" class="input-field" placeholder="Enter your Binance ID"></div>
+            <div class="input-group">
+                <label for="withdrawal-binance-id">Binance ID</label>
+                <input type="text" id="withdrawal-binance-id" class="input-field" placeholder="Enter Your Binance ID">
+            </div>
             <div class="modal-actions"><button class="btn" style="background: #e0e0e0; flex:1;" onclick="hideWithdrawalModal()">Cancel</button><button class="btn btn-primary" style="flex:2;" onclick="requestWithdrawal()">Request</button></div>
         </div>
     </div>
@@ -141,8 +142,7 @@
         const BOT_USERNAME = "CoinTaskersBot";
         const REPLIT_BOT_URL = "https://928740e5-69d4-424c-a075-3ffe15f62ea8-00-3v2dxgwkf57wq.pke.replit.dev/";
         const CT_PER_USD = 1000;
-        //const REWARDS = { ad: 40, referral: 50 };
-        const REWARDS = { ad: 40, referral: 50, channel: 100 };
+        const REWARDS = { ad: 40, referral: 50 };
         const MIN_WITHDRAWAL_CT = 5000;
         
         document.addEventListener('DOMContentLoaded', async () => {
@@ -151,7 +151,6 @@
                 tgUser = Telegram.WebApp.initDataUnsafe.user;
             } else {
                 console.warn("Running in browser. Faking user data.");
-                alert("Kindly Open in Telegram App Or Use VPN");
                 tgUser = { id: 123456, first_name: 'Browser', last_name: 'User', username: 'browseruser', photo_url: '' };
             }
             
@@ -367,52 +366,44 @@
         function renderPackages() {
             const currentPlanContainer = document.getElementById('current-plan-container'); const packageContainer = document.getElementById('package-container'); currentPlanContainer.innerHTML = ''; packageContainer.innerHTML = '';
             const currentKey = userData.activePackage || 'free'; const currentPkg = appPackages[currentKey];
-            if (currentPkg) { const dailyEarning = (currentPkg.adLimit * REWARDS.ad) / CT_PER_USD; currentPlanContainer.innerHTML = `<div class="current-plan-card"><h3>${currentPkg.name}</h3><ul><li><i class="fa-solid fa-check"></i> ${currentPkg.adLimit} Ads Daily</li><li><i class="fa-solid fa-check"></i> Earn up to $${dailyEarning.toFixed(2)}/day</li><li><i class="fa-solid fa-check"></i> Withdrawal Access ${currentKey === 'free' ? '<i class="fa-solid fa-times" style="color: red; margin-left: 5px;"></i>' : ''}</li></ul><button class="btn-buy" disabled>Current Plan</button></div>`; }
+            if (currentPkg) { const dailyEarning = (currentPkg.adLimit * REWARDS.ad) / CT_PER_USD; currentPlanContainer.innerHTML = `<div class="current-plan-card"><h3>${currentPkg.name}</h3><ul><li><i class="fa-solid fa-check"></i> ${currentPkg.adLimit} Ads Daily</li><li><i class="fa-solid fa-check"></i> Earn up to $${dailyEarning.toFixed(2)}/day</li><li><i class="fa-solid fa-check"></i> Withdrawal Access</ul><button class="btn-buy" disabled>Current Plan</button></div>`; }
             const activePackages = Object.entries(appPackages).filter(([key, pkg]) => key !== 'free' && key !== currentKey && pkg.isActive);
             if (activePackages.length === 0) { packageContainer.innerHTML = "<p>No other packages available right now.</p>"; return; }
             activePackages.forEach(([key, pkg]) => { const dailyEarning = (pkg.adLimit * REWARDS.ad) / CT_PER_USD; packageContainer.innerHTML += `<div class="package-card"><h3>${pkg.name}</h3><div class="price">$${pkg.price}<small>/${pkg.durationDays} days</small></div><ul><li><i class="fa-solid fa-check"></i> ${pkg.adLimit} Ads Daily</li><li><i class="fa-solid fa-check"></i> Earn up to $${dailyEarning.toFixed(2)}/day</li><li><i class="fa-solid fa-check"></i> Withdrawal Access</li></ul><button class="btn-buy" onclick="buyPackage('${key}')">Activate Plan</button></div>`; });
         }
         //ChannelTask
-        
-   async function loadChannelTasks() {
+        async function loadChannelTasks() {
     const container = document.getElementById('channel-tasks-container');
     container.innerHTML = `<p style="color:var(--text-secondary)">Loading channels...</p>`;
 
     try {
         const querySnapshot = await db.collection("channels").get();
-        container.innerHTML = '';
-
         if (querySnapshot.empty) {
             container.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">No channel tasks available.</p>';
             return;
         }
 
+        let html = '';
+        const claimed = (window.userData?.claimedChannels || []);
         querySnapshot.forEach((doc) => {
             const channel = doc.data();
-            const taskCompleted = localStorage.getItem("task_completed_" + doc.id) === "true";
+            const isClaimed = claimed.includes(doc.id);
 
-            const buttonHTML = taskCompleted
-                ? `<div class="task-reward">Completed</div>`
-                : `<div class="task-reward">
-                        <button class="verify-btn" 
-                                onclick="initiateChannelJoin(this)" 
-                                data-id="${doc.id}" 
-                                data-link="${channel.link}" 
-                                data-reward="${channel.reward}">
-                                +${channel.reward} CT
-                        </button>
-                   </div>`;
+            const buttonHTML = isClaimed 
+                ? `<div class="task-reward">Completed</div>` 
+                : `<div class="task-reward"><button class="verify-btn" onclick="initiateChannelJoin(this)" data-id="${doc.id}" data-link="${channel.link}" data-reward="${channel.reward}">+${channel.reward} CT</button></div>`;
 
-            container.innerHTML += `
-                <div class="task-card ${taskCompleted ? 'disabled' : ''}">
-                    <div class="task-icon"><i class="fa-brands fa-telegram"></i></div>
-                    <div class="task-details">
-                        <h3>${channel.name}</h3>
-                        <p>Join our channel for a reward.</p>
-                    </div>
-                    ${buttonHTML}
-                </div>`;
+            html += `<div class="task-card ${isClaimed ? 'disabled' : ''}">
+                        <div class="task-icon"><i class="fa-brands fa-telegram"></i></div>
+                        <div class="task-details">
+                            <h3>${channel.name}</h3>
+                            <p>Join our channel for a reward.</p>
+                        </div>
+                        ${buttonHTML}
+                    </div>`;
         });
+
+        container.innerHTML = html;
     } catch (error) {
         console.error(error);
         container.innerHTML = '<p style="color:red">Could not load tasks.</p>';
@@ -420,67 +411,84 @@
 }
 
 function initiateChannelJoin(element) {
-    // Open the Telegram channel
-    const channelUrl = element.dataset.link;
-    window.open(channelUrl, "_blank");
-
-    // Change button to Verify
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.openTelegramLink(element.dataset.link);
+    } else {
+        window.open(element.dataset.link, "_blank");
+    }
     element.textContent = 'Verify';
     element.setAttribute('onclick', `verifyChannelJoin(this)`);
 }
 
-function verifyChannelJoin(element) {
-    const taskId = element.dataset.id;
-
-    // Prevent double rewards
-    if (localStorage.getItem("task_completed_" + taskId)) {
-        element.textContent = 'Completed';
-        element.disabled = true;
-        customAlert("Task already completed.", "info");
-        return;
-    }
-
-    // Give reward
-    let reward = Number(element.dataset.reward) || 100;
-
-    let balance = Number(localStorage.getItem("user_balance") || 0);
-    balance += reward;
-    localStorage.setItem("user_balance", balance);
-
-    // Mark task as completed
-    localStorage.setItem("task_completed_" + taskId, "true");
-
-    element.textContent = 'Completed';
+async function verifyChannelJoin(element) {
+    element.textContent = '...';
     element.disabled = true;
+    try {
+        const response = await fetch(`${REPLIT_BOT_URL}/verify-join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                initData: Telegram.WebApp.initData,
+                channelId: element.dataset.id
+            })
+        });
+        const result = await response.json();
 
-    const balanceEl = document.getElementById("user-balance");
-    if (balanceEl) balanceEl.textContent = balance + " CT";
+        if (!result.success) {
+            element.textContent = 'Verify';
+            element.disabled = false;
+            customAlert(result.error || "Verification failed.", "error");
+        } else {
+            // mark as completed
+            element.parentElement.innerHTML = `<div class="task-reward">Completed</div>`;
 
-    customAlert(`+${reward} CT added! Task completed.`, "success");
+            // reward user 50 CT
+            let reward = parseInt(element.dataset.reward) || 50; // fallback 50
+            if (window.userData) {
+                window.userData.balance = (window.userData.balance || 0) + reward;
+            }
+
+            // update balance in UI (if you have a balance element)
+            const balanceEl = document.getElementById("user-balance");
+            if (balanceEl) {
+                balanceEl.textContent = window.userData.balance + " CT";
+            }
+
+            // show confirmation
+            customAlert(`Success! You received +${reward} CT 🎉`);
+        }
+    } catch (error) {
+        console.error(error);
+        element.textContent = 'Verify';
+        element.disabled = false;
+        customAlert("Connection error.", "error");
+    }
 }
 
+       
+     
+        
         function showWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'flex'; }
         function hideWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'none'; }
-        function toggleWithdrawalInput() { const method = document.getElementById('withdrawal-method').value; document.getElementById('usdt-input-group').style.display = method === 'usdt' ? 'block' : 'none'; document.getElementById('binance-input-group').style.display = method === 'binance' ? 'block' : 'none'; }
+      
         async function requestWithdrawal() {
             const amount = parseFloat(document.getElementById('withdrawal-amount').value);
-    const method = document.getElementById('withdrawal-method').value;
-    const paymentDetail = (method === 'usdt')
-        ? document.getElementById('withdrawal-address').value.trim()
-        : document.getElementById('withdrawal-binance-id').value.trim();
-
-    const withdrawalsRef = db.collection("withdrawals");
+             const paymentDetail = document.getElementById('withdrawal-binance-id').value.trim();
+            const withdrawalsRef = db.collection("withdrawals");
 
     try {
-        // Condition 1: Active paid package
-        if (!userData.activePackage || userData.activePackage === 'free') {
-            hideWithdrawalModal();
-            alert("Buy Any Package To Submit Withdraw Request");
-        } 
+
+        // // Condition 1: Active paid package
+        // if (!userData.activePackage || userData.activePackage === 'free') {
+        //     hideWithdrawalModal();
+        //     alert("Buy Any Package To Submit Withdraw Request");
+        // } 
+
+
         // Condition 2: Payment details
-        else if (!paymentDetail) {
+        if (!paymentDetail) {
             hideWithdrawalModal();
-            alert("Please Submit Payment Details");
+            alert("Please Submit Binance ID");
         } 
         // Condition 3: Valid amount
         else if (isNaN(amount) || amount < MIN_WITHDRAWAL_CT || amount > userData.balance) {
@@ -541,7 +549,7 @@ function verifyChannelJoin(element) {
                         username: `@${tgUser.username || userData.firstName}`,
                         amount: amount,
                         amountUSD: amount / CT_PER_USD,
-                        method: method.toUpperCase(),
+                        method: "Binance",
                         paymentDetail: paymentDetail,
                         status: "pending",
                         requestedAt: firebase.firestore.FieldValue.serverTimestamp()
