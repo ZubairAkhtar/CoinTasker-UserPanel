@@ -46,6 +46,7 @@
 
         .package-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
         .current-plan-card { background: var(--card-color); border-radius: 15px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow); border: 2px solid var(--accent-color); margin-bottom: 1.5rem;}
+        .current-plan-card h3 { margin-top: 0; font-size: 1.5rem; color: var(--primary-color); font-weight: 600; }
         .package-card { background: var(--card-color); border-radius: 15px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow); border: 2px solid var(--border-color); }
         .package-card h3 { margin-top: 0; font-size: 1.5rem; color: var(--primary-color); font-weight: 600; }
         .package-card .price, .current-plan-card .price { font-size: 2rem; font-weight: 700; margin: 0.5rem 0; }
@@ -75,19 +76,13 @@
         .copy-btn { margin-left: auto; background: none; border: none; color: var(--primary-color); cursor: pointer; font-size: 1.2rem; }
         .verify-btn { background: var(--primary-color); color: white; padding: 6px 12px; border:none; border-radius: 8px; font-weight: 500; cursor: pointer;}
         .verify-btn:disabled { background: var(--text-secondary); cursor: wait;}
-            #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .spinner { width: 50px; height: 50px; border: 5px solid #ddd; border-top: 5px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
-          @keyframes spin { 100% { transform: rotate(360deg); }}
+           
     </style>
     
     <script src='//libtl.com/sdk.js' data-zone='9819312' data-sdk='show_9819312'></script>
     
 </head>
 <body>
-       <div id="loader">
-  <div class="spinner"></div>
-</div>
-    
     <div class="container">
         <main id="main-content">
             <!-- Views will be rendered here -->
@@ -121,9 +116,10 @@
             <div class="input-group"><label for="withdrawal-amount">Amount (CT)</label><input type="number" id="withdrawal-amount" class="input-field" value="5000" min="5000" max="5000" step="5000" oninput="if(this.value==='') return; this.value=Math.max(5000,Math.min(5000,Number(this.value)));" required>
 </div>
             <div class="input-group">
-                <label for="withdrawal-binance-id">Binance ID</label>
-                <input type="text" id="withdrawal-binance-id" class="input-field" placeholder="Enter Your Binance ID">
-            </div>
+  <label for="withdrawal-address">Enter Wallet (BEP20) Address</label>
+  <input type="text" id="withdrawal-address" class="input-field" placeholder="Enter Trust Wallet (BEP20) Address">
+</div>
+            
             <div class="modal-actions"><button class="btn" style="background: #e0e0e0; flex:1;" onclick="hideWithdrawalModal()">Cancel</button><button class="btn btn-primary" style="flex:2;" onclick="requestWithdrawal()">Request</button></div>
         </div>
     </div>
@@ -142,7 +138,7 @@
         const BOT_USERNAME = "CoinTaskersBot";
         const REPLIT_BOT_URL = "https://928740e5-69d4-424c-a075-3ffe15f62ea8-00-3v2dxgwkf57wq.pke.replit.dev/";
         const CT_PER_USD = 1000;
-        const REWARDS = { ad: 40, referral: 50 };
+        const REWARDS = { ad: 50, referral: 50 };
         const MIN_WITHDRAWAL_CT = 5000;
         
         document.addEventListener('DOMContentLoaded', async () => {
@@ -470,25 +466,19 @@ async function verifyChannelJoin(element) {
         
         function showWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'flex'; }
         function hideWithdrawalModal() { document.getElementById('withdrawal-modal').style.display = 'none'; }
-      
+       
         async function requestWithdrawal() {
             const amount = parseFloat(document.getElementById('withdrawal-amount').value);
-             const paymentDetail = document.getElementById('withdrawal-binance-id').value.trim();
-            const withdrawalsRef = db.collection("withdrawals");
+    const paymentDetail = document.getElementById('withdrawal-address').value.trim();
+
+    const withdrawalsRef = db.collection("withdrawals");
 
     try {
-
-        // // Condition 1: Active paid package
-        // if (!userData.activePackage || userData.activePackage === 'free') {
-        //     hideWithdrawalModal();
-        //     alert("Buy Any Package To Submit Withdraw Request");
-        // } 
-
-
+       
         // Condition 2: Payment details
-        if (!paymentDetail) {
+         if (!paymentDetail) {
             hideWithdrawalModal();
-            alert("Please Submit Binance ID");
+            alert("Please Submit Payment Details");
         } 
         // Condition 3: Valid amount
         else if (isNaN(amount) || amount < MIN_WITHDRAWAL_CT || amount > userData.balance) {
@@ -545,14 +535,14 @@ async function verifyChannelJoin(element) {
                 // All conditions passed, submit withdrawal
                 else {
                     await withdrawalsRef.add({
-                        userId: tgUser.id.toString(),
-                        username: `@${tgUser.username || userData.firstName}`,
-                        amount: amount,
-                        amountUSD: amount / CT_PER_USD,
-                        method: "Binance",
-                        paymentDetail: paymentDetail,
-                        status: "pending",
-                        requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+            userId: tgUser.id.toString(),
+    username: `@${tgUser.username || userData.firstName}`,
+    amount: amount,
+    amountUSD: amount / CT_PER_USD,
+    method: "WALLET",
+    paymentDetail: paymentDetail,
+    status: "pending",
+    requestedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
                     hideWithdrawalModal();
@@ -568,10 +558,7 @@ async function verifyChannelJoin(element) {
         }
         function copyRefLink() { const link = document.getElementById('ref-link').textContent; navigator.clipboard.writeText(link).then(() => { customAlert("Referral link copied!"); }, () => { customAlert("Failed to copy link.", 'error'); }); }
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    // your Telegram & Firebase initialization
-    document.getElementById("loader").style.display = "none"; // hide loader after setup
-});
+ 
     </script>
 </body>
 </html>
