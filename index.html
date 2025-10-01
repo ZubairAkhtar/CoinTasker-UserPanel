@@ -79,7 +79,8 @@
            
     </style>
     
-    <script src='//libtl.com/sdk.js' data-zone='9819312' data-sdk='show_9819312'></script>
+    <script src="https://adsgram.ai/js/sdk.min.js"></script>
+
     
 </head>
 <body>
@@ -315,7 +316,41 @@
 
         function customAlert(message, type = 'success') { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.showAlert) { Telegram.WebApp.showAlert(message); if (Telegram.WebApp.HapticFeedback) { Telegram.WebApp.HapticFeedback.notificationOccurred(type === 'success' ? 'success' : 'error'); } } else { alert(message); } }
         
-        function handleAdTask() { const currentPackageKey = userData.activePackage || 'free'; const currentPackage = appPackages[currentPackageKey] || appPackages['free']; const adLimit = currentPackage.adLimit; if ((userData.dailyAdCount || 0) >= adLimit) { return customAlert(`Daily ad limit reached.`, 'error'); } if (typeof show_9819312 !== 'function') { return customAlert("Ad system not ready.", 'error'); } customAlert("Loading ad..."); show_9819312().then(async () => { await userRef.update({ balance: firebase.firestore.FieldValue.increment(REWARDS.ad), dailyAdCount: firebase.firestore.FieldValue.increment(1) }); customAlert(`+${REWARDS.ad} CT for watching an ad!`); }).catch(error => { customAlert("Ad could not be shown.", 'error'); }); }
+  // AdsGram
+ // Initialize Adsgram with your Block ID
+   const AdController = window.Adsgram.init({
+       blockId: "15537"   //  replace with your own Adsgram Block ID
+   });
+
+   async function handleAdTask() {
+       const currentPackageKey = userData.activePackage || 'free';
+       const currentPackage = appPackages[currentPackageKey] || appPackages['free'];
+       const adLimit = currentPackage.adLimit;
+
+       if ((userData.dailyAdCount || 0) >= adLimit) {
+           return customAlert(`Daily ad limit reached.`, 'error');
+       }
+
+       if (!AdController) {
+           return customAlert("Adsgram not ready.", "error");
+       }
+
+       customAlert("Loading ad...");
+
+       AdController.show().then(async () => {
+           await userRef.update({
+               balance: firebase.firestore.FieldValue.increment(REWARDS.ad),
+               dailyAdCount: firebase.firestore.FieldValue.increment(1)
+           });
+           customAlert(`+${REWARDS.ad} CT for watching an ad!`);
+       }).catch((error) => {
+           console.error(error);
+           customAlert("Ad could not be shown.", "error");
+       });
+   }
+// AdsGramEnd
+
+
         function showDepositModal() { document.getElementById('deposit-modal').style.display = 'flex'; }
         function hideDepositModal() { document.getElementById('deposit-modal').style.display = 'none'; }
         async function buyPackage(packageKey) { const pkg = appPackages[packageKey]; if (!pkg || pkg.price === 0) return; currentPackageToBuy = packageKey; document.getElementById('deposit-modal-title').textContent = `Activate ${pkg.name} Plan ($${pkg.price})`; document.getElementById('deposit-amount').value = pkg.price; showDepositModal(); }
