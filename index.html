@@ -317,37 +317,42 @@
         function customAlert(message, type = 'success') { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.showAlert) { Telegram.WebApp.showAlert(message); if (Telegram.WebApp.HapticFeedback) { Telegram.WebApp.HapticFeedback.notificationOccurred(type === 'success' ? 'success' : 'error'); } } else { alert(message); } }
         
   // AdsGram
- // Initialize Adsgram with your Block ID
-   const AdController = window.Adsgram.init({
-       blockId: "15537"   //  replace with your own Adsgram Block ID
-   });
+ // Initialize Adsgram with App ID + Block ID
+    let AdController;
+    document.addEventListener("DOMContentLoaded", () => {
+        AdController = window.Adsgram.init({
+            appId: "13838",    // replace with your AdsGram App ID
+            blockId: "15537"         // replace with your AdsGram Block ID
+        });
+    });
 
-   async function handleAdTask() {
-       const currentPackageKey = userData.activePackage || 'free';
-       const currentPackage = appPackages[currentPackageKey] || appPackages['free'];
-       const adLimit = currentPackage.adLimit;
+    async function handleAdTask() {
+        const currentPackageKey = userData.activePackage || 'free';
+        const currentPackage = appPackages[currentPackageKey] || appPackages['free'];
+        const adLimit = currentPackage.adLimit;
 
-       if ((userData.dailyAdCount || 0) >= adLimit) {
-           return customAlert(`Daily ad limit reached.`, 'error');
-       }
+        if ((userData.dailyAdCount || 0) >= adLimit) {
+            return customAlert(`Daily ad limit reached.`, 'error');
+        }
 
-       if (!AdController) {
-           return customAlert("Adsgram not ready.", "error");
-       }
+        if (!AdController) {
+            return customAlert("AdsGram not ready yet.", "error");
+        }
 
-       customAlert("Loading ad...");
+        customAlert("Loading ad...");
 
-       AdController.show().then(async () => {
-           await userRef.update({
-               balance: firebase.firestore.FieldValue.increment(REWARDS.ad),
-               dailyAdCount: firebase.firestore.FieldValue.increment(1)
-           });
-           customAlert(`+${REWARDS.ad} CT for watching an ad!`);
-       }).catch((error) => {
-           console.error(error);
-           customAlert("Ad could not be shown.", "error");
-       });
-   }
+        try {
+            await AdController.show();
+            await userRef.update({
+                balance: firebase.firestore.FieldValue.increment(REWARDS.ad),
+                dailyAdCount: firebase.firestore.FieldValue.increment(1)
+            });
+            customAlert(`+${REWARDS.ad} CT for watching an ad!`);
+        } catch (err) {
+            console.error("AdsGram error:", err);
+            customAlert("Ad could not be shown.", "error");
+        }
+    }
 // AdsGramEnd
 
 
